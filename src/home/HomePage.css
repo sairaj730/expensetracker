@@ -1,0 +1,134 @@
+.homepage {
+  max-width: 900px;
+  margin: auto;
+  padding: 20px;
+  text-align: center;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.welcome-message {
+  text-align: left;
+  font-size: 1.2rem;
+  font-weight: 500;
+  color: #333;
+}
+
+h1 {
+  color: #333;
+  margin-bottom: 20px;
+}
+
+.main-content {
+  display: flex;
+  flex-wrap: wrap; /* Allow wrapping on smaller screens */
+  justify-content: center;
+  gap: 20px; /* Space between sections */
+}
+
+.left-section {
+  flex: 1;
+  min-width: 300px; /* Ensure it doesn't get too small */
+  text-align: left;
+}
+
+.form-section {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 15px;
+  justify-content: flex-start; /* Align items to the start */
+  margin-bottom: 30px;
+}
+
+.form-section input,
+.form-section select {
+  padding: 10px;
+  font-size: 16px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  min-width: 200px;
+}
+
+.form-section button {
+  background-color: #36a2eb;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 16px;
+  transition: background 0.3s ease;
+}
+
+.form-section button:hover {
+  background-color: #1e7ac9;
+}
+
+.chart-section {
+  flex: 1;
+  max-width: 400px; /* Control chart size */
+  margin: 0 auto; /* Center chart within its flex item */
+}
+
+.no-data {
+  color: #777;
+  font-style: italic;
+}
+
+/* Table Styles */
+.table-section {
+  margin-top: 20px;
+}
+
+.table-section h2 {
+  color: #333;
+  margin-bottom: 15px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 10px;
+}
+
+table th,
+table td {
+  border: 1px solid #ddd;
+  padding: 8px;
+  text-align: left;
+}
+
+table th {
+  background-color: #f2f2f2;
+  color: #555;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .main-content {
+    flex-direction: column; /* Stack sections vertically */
+    align-items: center; /* Center items when stacked */
+  }
+
+  .left-section,
+  .chart-section {
+    width: 100%;
+    max-width: 500px; /* Limit width on smaller screens */
+  }
+
+  .form-section {
+    justify-content: center; /* Center form items when stacked */
+  }
+}
+
+@media (max-width: 600px) {
+  .form-section {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .form-section input,
+  .form-section select,
+  .form-section button {
+    width: 90%;
+  }
+}
