@@ -3,6 +3,9 @@ import { Pie } from "react-chartjs-2";
 import "./HomePage.css";
 import axios from "axios";
 
+// Import icons
+import { FaUtensils, FaShoppingCart, FaHome, FaBus, FaCar, FaGrinBeam, FaLaptop, FaMoneyBillWave, FaChartLine, FaDollarSign, FaEllipsisH } from 'react-icons/fa';
+
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from "chart.js";
 
 ChartJS.register(ArcElement, Tooltip, Legend);
@@ -13,20 +16,33 @@ const api = axios.create({
 });
 
 const expenseCategories = [
-  "Housing",
-  "Utilities",
-  "Groceries",
-  "Transportation",
-  "Healthcare",
-  "Insurance",
-  "Entertainment",
-  "Education",
-  "Savings",
-  "Debt Repayment",
-  "Personal Care",
-  "Dining Out",
-  "Miscellaneous",
+  { name: "Food & Drinks", icon: "FaUtensils" },
+  { name: "Shopping", icon: "FaShoppingCart" },
+  { name: "Housing", icon: "FaHome" },
+  { name: "Transportation", icon: "FaBus" },
+  { name: "Vehicle", icon: "FaCar" },
+  { name: "Life & Entertainment", icon: "FaGrinBeam" },
+  { name: "Communication, PC", icon: "FaLaptop" },
+  { name: "Financial Expenses", icon: "FaMoneyBillWave" },
+  { name: "Investments", icon: "FaChartLine" },
+  { name: "Income", icon: "FaDollarSign" },
+  { name: "Others", icon: "FaEllipsisH" },
 ];
+
+// Map of icon names to components
+const IconMap = {
+  FaUtensils: FaUtensils,
+  FaShoppingCart: FaShoppingCart,
+  FaHome: FaHome,
+  FaBus: FaBus,
+  FaCar: FaCar,
+  FaGrinBeam: FaGrinBeam,
+  FaLaptop: FaLaptop,
+  FaMoneyBillWave: FaMoneyBillWave,
+  FaChartLine: FaChartLine,
+  FaDollarSign: FaDollarSign,
+  FaEllipsisH: FaEllipsisH,
+};
 
 export default function HomePage({ user }) {
   const [expenses, setExpenses] = useState([]);
@@ -35,7 +51,7 @@ export default function HomePage({ user }) {
 
   useEffect(() => {
     if (user) {
-      api.get("/api/expenses").then((response) => {
+      api.get("/api/expenses", { params: { userId: user.id } }).then((response) => {
         setExpenses(response.data);
       }).catch(error => {
         console.error("Error fetching expenses", error);
@@ -44,15 +60,23 @@ export default function HomePage({ user }) {
   }, [user]);
 
   const handleAddExpense = () => {
-    if (!amount || !category) return;
+    if (!amount || !category || isNaN(amount)){
+      alert("Please enter a valid amount and select a category.");
+      return;
+    }
     const newExpense = {
-      amount: parseFloat(amount),
+      amount: amount,
       category: category,
       date: new Date().toISOString().slice(0, 10), // YYYY-MM-DD
     };
 
-    api.post("/api/expenses", newExpense).then(response => {
-        setExpenses((prev) => [...prev, response.data]);
+    api.post("/api/expenses", newExpense, { params: { userId: user.id } }).then(response => {
+        // After adding, re-fetch expenses to ensure aggregated view is up-to-date
+        api.get("/api/expenses", { params: { userId: user.id } }).then((response) => {
+          setExpenses(response.data);
+        }).catch(error => {
+          console.error("Error fetching expenses after add", error);
+        });
         setAmount("");
         setCategory("");
     }).catch(error => {
@@ -62,13 +86,31 @@ export default function HomePage({ user }) {
   };
 
   const handleDeleteExpense = (id) => {
-    api.delete(`/api/expenses/${id}`).then(() => {
-        setExpenses(prev => prev.filter(exp => exp.id !== id));
+    api.delete(`/api/expenses/${id}`, { params: { userId: user.id } }).then(() => {
+        // After deleting, re-fetch expenses to ensure aggregated view is up-to-date
+        api.get("/api/expenses", { params: { userId: user.id } }).then((response) => {
+          setExpenses(response.data);
+        }).catch(error => {
+          console.error("Error fetching expenses after delete", error);
+        });
     }).catch(error => {
         console.error("Error deleting expense", error);
         alert("Failed to delete expense. Please try again.");
     });
   };
+
+  const aggregatedExpensesForTable = useMemo(() => {
+    const aggregated = expenses.reduce((acc, expense) => {
+      acc[expense.category] = (acc[expense.category] || 0) + expense.amount;
+      return acc;
+    }, {});
+
+    // Convert aggregated object to an array of objects for table rendering
+    return Object.keys(aggregated).map(categoryName => ({
+      category: categoryName,
+      amount: aggregated[categoryName],
+    }));
+  }, [expenses]);
 
   const chartData = useMemo(() => {
     const aggregatedExpenses = expenses.reduce((acc, expense) => {
@@ -109,7 +151,7 @@ export default function HomePage({ user }) {
 
   return (
     <div className="homepage">
-      <h2 className="welcome-message">Welcome, {user.email}!</h2>
+      <h2 className="welcome-message">Welcome, {user.firstName}!</h2>
       <h1>Expense Tracker</h1>
 
       <div className="main-content">
@@ -127,11 +169,15 @@ export default function HomePage({ user }) {
               onChange={(e) => setCategory(e.target.value)}
             >
               <option value="">Select Category</option>
-              {expenseCategories.map((cat, idx) => (
-                <option key={idx} value={cat}>
-                  {cat}
-                </option>
-              ))}
+              {expenseCategories.map((cat, idx) => {
+                const IconComponent = IconMap[cat.icon];
+                return (
+                  <option key={idx} value={cat.name}>
+                    {IconComponent && <IconComponent style={{ marginRight: '5px' }} />}
+                    {cat.name}
+                  </option>
+                );
+              })}
             </select>
 
             <button onClick={handleAddExpense}>Add Expense</button>
@@ -139,7 +185,7 @@ export default function HomePage({ user }) {
 
           <div className="table-section">
             <h2>Recent Expenses</h2>
-            {expenses.length > 0 ? (
+            {aggregatedExpensesForTable.length > 0 ? (
               <table>
                 <thead>
                   <tr>
@@ -149,9 +195,23 @@ export default function HomePage({ user }) {
                   </tr>
                 </thead>
                 <tbody>
-                  {expenses.map((exp) => (
-                    <tr key={exp.id}>
-                      <td>{exp.category}</td>
+                  {aggregatedExpensesForTable.map((exp) => (
+                    <tr key={exp.category}>
+                      <td>
+                        {(() => {
+                          const categoryData = expenseCategories.find(c => c.name === exp.category);
+                          if (categoryData) {
+                            const IconComponent = IconMap[categoryData.icon];
+                            return (
+                              <>
+                                {IconComponent && <IconComponent style={{ marginRight: '5px' }} />}
+                                {exp.category}
+                              </>
+                            );
+                          }
+                          return exp.category;
+                        })()}
+                      </td>
                       <td>${exp.amount.toFixed(2)}</td>
                       <td><button onClick={() => handleDeleteExpense(exp.id)} className="btn-delete">Delete</button></td>
                     </tr>

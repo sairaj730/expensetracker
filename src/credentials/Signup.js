@@ -4,6 +4,8 @@ import { Link } from "react-router-dom";
 import axios from "axios";
 
 function Signup({ handleLogin }) {
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -18,6 +20,8 @@ function Signup({ handleLogin }) {
 
     try {
       const response = await axios.post("http://localhost:8081/api/auth/signup", {
+        firstName, // Added
+        lastName,  // Added
         email,
         password
       });
@@ -39,6 +43,22 @@ function Signup({ handleLogin }) {
       <div className="auth-card">
         <h2 className="auth-title">Sign Up</h2>
         <form onSubmit={handleSignup} className="auth-form">
+          <input
+            type="text" // Added
+            placeholder="First Name" // Added
+            className="auth-input"
+            value={firstName} // Added
+            onChange={(e) => setFirstName(e.target.value)} // Added
+            required
+          />
+          <input
+            type="text" // Added
+            placeholder="Last Name" // Added
+            className="auth-input"
+            value={lastName} // Added
+            onChange={(e) => setLastName(e.target.value)} // Added
+            required
+          />
           <input
             type="email"
             placeholder="Email"
