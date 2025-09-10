@@ -1,10 +1,10 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { Pie } from "react-chartjs-2";
 import "./HomePage.css";
+import CustomSelect from "../components/CustomSelect/CustomSelect"; // Import CustomSelect
 import axios from "axios";
 
-// Import icons
-import { FaUtensils, FaShoppingCart, FaHome, FaBus, FaCar, FaGrinBeam, FaLaptop, FaMoneyBillWave, FaChartLine, FaDollarSign, FaEllipsisH } from 'react-icons/fa';
+import { FiCoffee, FiShoppingCart, FiHome, FiTruck, FiTool, FiSmile, FiMonitor, FiTrendingUp, FiDollarSign, FiPlusCircle, FiMoreHorizontal } from 'react-icons/fi';
 
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from "chart.js";
 
@@ -16,32 +16,32 @@ const api = axios.create({
 });
 
 const expenseCategories = [
-  { name: "Food & Drinks", icon: "FaUtensils" },
-  { name: "Shopping", icon: "FaShoppingCart" },
-  { name: "Housing", icon: "FaHome" },
-  { name: "Transportation", icon: "FaBus" },
-  { name: "Vehicle", icon: "FaCar" },
-  { name: "Life & Entertainment", icon: "FaGrinBeam" },
-  { name: "Communication, PC", icon: "FaLaptop" },
-  { name: "Financial Expenses", icon: "FaMoneyBillWave" },
-  { name: "Investments", icon: "FaChartLine" },
-  { name: "Income", icon: "FaDollarSign" },
-  { name: "Others", icon: "FaEllipsisH" },
+  { name: "Food & Drinks", icon: "FiCoffee" },
+  { name: "Shopping", icon: "FiShoppingCart" },
+  { name: "Housing", icon: "FiHome" },
+  { name: "Transportation", icon: "FiTruck" },
+  { name: "Vehicle", icon: "FiTool" },
+  { name: "Life & Entertainment", icon: "FiSmile" },
+  { name: "Communication, PC", icon: "FiMonitor" },
+  { name: "Financial Expenses", icon: "FiTrendingUp" },
+  { name: "Investments", icon: "FiDollarSign" },
+  { name: "Income", icon: "FiPlusCircle" },
+  { name: "Others", icon: "FiMoreHorizontal" },
 ];
 
 // Map of icon names to components
 const IconMap = {
-  FaUtensils: FaUtensils,
-  FaShoppingCart: FaShoppingCart,
-  FaHome: FaHome,
-  FaBus: FaBus,
-  FaCar: FaCar,
-  FaGrinBeam: FaGrinBeam,
-  FaLaptop: FaLaptop,
-  FaMoneyBillWave: FaMoneyBillWave,
-  FaChartLine: FaChartLine,
-  FaDollarSign: FaDollarSign,
-  FaEllipsisH: FaEllipsisH,
+  FiCoffee,
+  FiShoppingCart,
+  FiHome,
+  FiTruck,
+  FiTool,
+  FiSmile,
+  FiMonitor,
+  FiTrendingUp,
+  FiDollarSign,
+  FiPlusCircle,
+  FiMoreHorizontal,
 };
 
 export default function HomePage({ user }) {
@@ -68,9 +68,10 @@ export default function HomePage({ user }) {
       amount: amount,
       category: category,
       date: new Date().toISOString().slice(0, 10), // YYYY-MM-DD
+      user: user
     };
 
-    api.post("/api/expenses", newExpense, { params: { userId: user.id } }).then(response => {
+    api.post("/api/expenses", newExpense).then(response => {
         // After adding, re-fetch expenses to ensure aggregated view is up-to-date
         api.get("/api/expenses", { params: { userId: user.id } }).then((response) => {
           setExpenses(response.data);
@@ -99,19 +100,6 @@ export default function HomePage({ user }) {
     });
   };
 
-  const aggregatedExpensesForTable = useMemo(() => {
-    const aggregated = expenses.reduce((acc, expense) => {
-      acc[expense.category] = (acc[expense.category] || 0) + expense.amount;
-      return acc;
-    }, {});
-
-    // Convert aggregated object to an array of objects for table rendering
-    return Object.keys(aggregated).map(categoryName => ({
-      category: categoryName,
-      amount: aggregated[categoryName],
-    }));
-  }, [expenses]);
-
   const chartData = useMemo(() => {
     const aggregatedExpenses = expenses.reduce((acc, expense) => {
       acc[expense.category] = (acc[expense.category] || 0) + expense.amount;
@@ -134,6 +122,35 @@ export default function HomePage({ user }) {
     };
   }, [expenses]);
 
+  const chartOptions = {
+    plugins: {
+      legend: {
+        labels: {
+          color: 'white',
+          font: {
+            size: 14,
+          },
+        },
+      },
+      tooltip: {
+        bodyColor: 'white',
+        titleColor: 'white',
+        callbacks: {
+          label: function(context) {
+            let label = context.label || '';
+            if (label) {
+              label += ': ';
+            }
+            if (context.parsed !== null) {
+              label += new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(context.parsed);
+            }
+            return label;
+          }
+        }
+      },
+    },
+  };
+
   const totalExpenses = useMemo(() => {
     return expenses.reduce((sum, expense) => sum + expense.amount, 0);
   }, [expenses]);
@@ -151,8 +168,8 @@ export default function HomePage({ user }) {
 
   return (
     <div className="homepage">
-      <h2 className="welcome-message">Welcome, {user.firstName}!</h2>
       <h1>Expense Tracker</h1>
+      <h2 className="welcome-message">Welcome, {user.firstName}!</h2>
 
       <div className="main-content">
         <div className="left-section">
@@ -164,28 +181,21 @@ export default function HomePage({ user }) {
               onChange={(e) => setAmount(e.target.value)}
             />
 
-            <select
+            <CustomSelect
+              options={expenseCategories.map(cat => ({
+                name: cat.name,
+                icon: IconMap[cat.icon]
+              }))}
               value={category}
-              onChange={(e) => setCategory(e.target.value)}
-            >
-              <option value="">Select Category</option>
-              {expenseCategories.map((cat, idx) => {
-                const IconComponent = IconMap[cat.icon];
-                return (
-                  <option key={idx} value={cat.name}>
-                    {IconComponent && <IconComponent style={{ marginRight: '5px' }} />}
-                    {cat.name}
-                  </option>
-                );
-              })}
-            </select>
+              onChange={setCategory}
+            />
 
             <button onClick={handleAddExpense}>Add Expense</button>
           </div>
 
           <div className="table-section">
             <h2>Recent Expenses</h2>
-            {aggregatedExpensesForTable.length > 0 ? (
+            {expenses.length > 0 ? (
               <table>
                 <thead>
                   <tr>
@@ -195,8 +205,8 @@ export default function HomePage({ user }) {
                   </tr>
                 </thead>
                 <tbody>
-                  {aggregatedExpensesForTable.map((exp) => (
-                    <tr key={exp.category}>
+                  {expenses.map((exp) => (
+                    <tr key={exp.id}>
                       <td>
                         {(() => {
                           const categoryData = expenseCategories.find(c => c.name === exp.category);
@@ -232,7 +242,7 @@ export default function HomePage({ user }) {
 
         <div className="chart-section">
           {expenses.length > 0 ? (
-            <Pie data={chartData} />
+            <Pie data={chartData} options={chartOptions} />
           ) : (
             <div className="no-data-chart">
                 <h3>No Data for Chart</h3>
